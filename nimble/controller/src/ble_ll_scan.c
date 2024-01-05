@@ -816,7 +816,7 @@ ble_ll_scan_start(struct ble_ll_scan_sm *scansm)
 static uint8_t
 ble_ll_scan_get_next_adv_prim_chan(uint8_t chan)
 {
-    ++chan;
+//    ++chan;
     if (chan == BLE_PHY_NUM_CHANS) {
         chan = BLE_PHY_ADV_CHAN_START;
     }
@@ -1994,7 +1994,6 @@ ble_ll_scan_rx_pkt_in(uint8_t ptype, struct os_mbuf *om, struct ble_mbuf_hdr *hd
     struct ble_ll_scan_sm *scansm;
     struct ble_ll_scan_addr_data addrd;
     uint8_t max_pdu_type;
-
     scansm = &g_ble_ll_scan_sm;
 
     /* Ignore PDUs we do not expect here */
@@ -2016,6 +2015,29 @@ ble_ll_scan_rx_pkt_in(uint8_t ptype, struct os_mbuf *om, struct ble_mbuf_hdr *hd
         ble_ll_scan_chk_resume();
         return;
     }
+#endif
+#if 0
+    if (BLE_MBUF_HDR_CRC_OK(hdr)) {
+        if (ptype == BLE_ADV_PDU_TYPE_CONNECT_IND) {
+#if MYNEWT_VAL(BLE_LL_ROLE_PERIPHERAL)
+	    ble_ll_scan_sm_stop(0);
+    	    uint8_t *rxbuf;
+    	    rxbuf = m->om_data;
+            if (rxbuf[0] & BLE_ADV_PDU_HDR_TXADD_MASK) {
+                addr_type = BLE_ADDR_RANDOM;
+            } else {
+                addr_type = BLE_ADDR_PUBLIC;
+            }
+ 
+	    if (ble_ll_conn_periph_start(rxbuf, addr_type, hdr,
+                                         /*!(advsm->props &
+                                           BLE_HCI_LE_SET_EXT_ADV_PROP_LEGACY))*/ 0) {
+		/*scheduled for conn after that we schould do always rx only instead of tx*/
+	        return;
+	    }
+#endif
+    	}
+    } 
 #endif
 
     switch (scansm->scanp->scan_type) {
@@ -2101,7 +2123,7 @@ ble_ll_scan_hci_set_params(const uint8_t *cmdbuf, uint8_t len)
     scanp->scan_type = cmd->scan_type;
     scanp->timing.interval = ble_ll_scan_time_hci_to_ticks(scan_itvl);
     scanp->timing.window = ble_ll_scan_time_hci_to_ticks(scan_window);
-
+    printf("scan_type %d scan_itvl %d scan_window %d \n",scanp->scan_type,scan_itvl,scan_window);
 #if (BLE_LL_SCAN_PHY_NUMBER == 2)
     scanp = &g_ble_ll_scan_params.scan_phys[PHY_CODED];
     scanp->configured = 0;

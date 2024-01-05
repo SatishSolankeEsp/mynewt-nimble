@@ -215,8 +215,8 @@ scan(void)
 {
     /* set scan parameters */
     struct ble_gap_disc_params scan_params;
-    scan_params.itvl = 500;
-    scan_params.window = 250;
+    scan_params.itvl = 160;
+    scan_params.window = 160;
     scan_params.filter_policy = 0;
     scan_params.limited = 0;
     scan_params.passive = 1;

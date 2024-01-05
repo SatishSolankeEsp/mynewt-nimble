@@ -921,7 +921,7 @@ ble_ll_rx_pkt_in(void)
     struct os_mbuf_pkthdr *pkthdr;
     struct ble_mbuf_hdr *ble_hdr;
     struct os_mbuf *m;
-
+    //printf("%s\n",__func__);
     /* Drain all packets off the queue */
     while (STAILQ_FIRST(&g_ble_ll_data.ll_rx_pkt_q)) {
         /* Get mbuf pointer from packet header pointer */
@@ -1093,8 +1093,13 @@ ble_ll_rx_start(uint8_t *rxbuf, uint8_t chan, struct ble_mbuf_hdr *rxhdr)
 
     ble_ll_trace_u32x2(BLE_LL_TRACE_ID_RX_START, g_ble_ll_data.ll_state,
                        pdu_type);
-
-    switch (g_ble_ll_data.ll_state) {
+    //printf("pdu%d\n",pdu_type);
+    
+    if (pdu_type == 5) {
+	printf("ind\n");
+    } 
+   
+ switch (g_ble_ll_data.ll_state) {
 #if MYNEWT_VAL(BLE_LL_ROLE_PERIPHERAL) || MYNEWT_VAL(BLE_LL_ROLE_CENTRAL)
     case BLE_LL_STATE_CONNECTION:
         rc = ble_ll_conn_rx_isr_start(rxhdr, ble_phy_access_addr_get());
@@ -1162,6 +1167,7 @@ ble_ll_rx_end(uint8_t *rxbuf, struct ble_mbuf_hdr *rxhdr)
     uint8_t len;
     uint8_t crcok;
     struct os_mbuf *rxpdu;
+//printf("%s\n",__func__);
 
     /* Get CRC status from BLE header */
     crcok = BLE_MBUF_HDR_CRC_OK(rxhdr);
@@ -1189,7 +1195,8 @@ ble_ll_rx_end(uint8_t *rxbuf, struct ble_mbuf_hdr *rxhdr)
 
 #if MYNEWT_VAL(BLE_LL_ROLE_PERIPHERAL) || MYNEWT_VAL(BLE_LL_ROLE_CENTRAL)
     if (BLE_MBUF_HDR_RX_STATE(rxhdr) == BLE_LL_STATE_CONNECTION) {
-        rc = ble_ll_conn_rx_isr_end(rxbuf, rxhdr);
+       	//printf("%d\n",__LINE__);
+	rc = ble_ll_conn_rx_isr_end(rxbuf, rxhdr);
         return rc;
     }
 #endif
