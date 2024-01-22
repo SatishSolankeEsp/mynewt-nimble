@@ -202,7 +202,8 @@ scan_event(struct ble_gap_event *event, void *arg)
     case BLE_GAP_EVENT_DISC_COMPLETE:
         MODLOG_DFLT(INFO, "Discovery completed, terminaton code: %d\n",
                     event->disc_complete.reason);
-        scan();
+	//printf("res scan\n");
+        //scan();
         return 0;
     default:
         MODLOG_DFLT(ERROR, "Discovery event not handled\n");
@@ -223,7 +224,7 @@ scan(void)
     scan_params.filter_duplicates = 1;
     /* performs discovery procedure; value of own_addr_type is hard-coded,
        because NRPA is used */
-    ble_gap_disc(BLE_OWN_ADDR_RANDOM, 1000, &scan_params, scan_event, NULL);
+    ble_gap_disc(BLE_OWN_ADDR_RANDOM,BLE_HS_FOREVER, &scan_params, scan_event, NULL);
 }
 
 static void

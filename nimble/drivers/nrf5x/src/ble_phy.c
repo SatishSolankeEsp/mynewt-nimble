@@ -1447,7 +1447,7 @@ ble_phy_rx_start_isr(void)
 
     return true;
 }
-
+extern int g_conn;
 static void
 ble_phy_isr(void)
 {
@@ -1492,6 +1492,9 @@ ble_phy_isr(void)
         NRF_RADIO->EVENTS_END = 0;
         NRF_RADIO->EVENTS_DISABLED = 0;
         nrf_radio_int_disable(NRF_RADIO, RADIO_INTENCLR_DISABLED_Msk);
+	if ( g_conn == 1) {                                        
+            printf("state %d\n",g_ble_phy_data.phy_state);   
+	}                                                        
 
         switch (g_ble_phy_data.phy_state) {
         case BLE_PHY_STATE_RX:

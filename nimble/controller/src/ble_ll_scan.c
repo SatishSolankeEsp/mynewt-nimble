@@ -42,6 +42,7 @@
 #include "controller/ble_ll_sync.h"
 #include "ble_ll_conn_priv.h"
 #include "ble_ll_priv.h"
+int sniff_c =0;
 
 #if MYNEWT_VAL(BLE_LL_ROLE_OBSERVER)
 
@@ -816,7 +817,7 @@ ble_ll_scan_start(struct ble_ll_scan_sm *scansm)
 static uint8_t
 ble_ll_scan_get_next_adv_prim_chan(uint8_t chan)
 {
-//    ++chan;
+   ++chan;
     if (chan == BLE_PHY_NUM_CHANS) {
         chan = BLE_PHY_ADV_CHAN_START;
     }
@@ -1181,7 +1182,7 @@ ble_ll_scan_rx_isr_start(uint8_t pdu_type, uint16_t *rxflags)
     rc = 0;
     scansm = &g_ble_ll_scan_sm;
     scanp = scansm->scanp;
-
+    //printf("scan type %d\n",scanp->scan_type);
     switch (scanp->scan_type) {
     case BLE_SCAN_TYPE_ACTIVE:
         /* If adv ind or scan ind, we may send scan request */
@@ -1601,6 +1602,9 @@ ble_ll_scan_rx_isr_end(struct os_mbuf *rxpdu, uint8_t crcok)
      * If buffer for incoming PDU was not allocated we need to force scan to be
      * restarted since LL will not be notified. Keep PHY enabled.
      */
+    if (rxpdu == NULL && (sniff_c ==1)) {
+	printf("return here\n");
+    }
     if (rxpdu == NULL) {
         ble_ll_scan_interrupted(scansm);
         return 0;
@@ -1635,12 +1639,16 @@ ble_ll_scan_rx_isr_end(struct os_mbuf *rxpdu, uint8_t crcok)
          */
         return -1;
 #endif
+    case BLE_ADV_PDU_TYPE_CONNECT_IND:
+	printf("ind\n");
+	return -1;
+	break;
     default:
         /* This is not something we would like to process here */
         rc = -1;
         break;
     }
-
+    
     if (rc == -1) {
         goto scan_rx_isr_ignore;
     }
@@ -1669,6 +1677,10 @@ ble_ll_scan_rx_isr_end(struct os_mbuf *rxpdu, uint8_t crcok)
     return -1;
 
 scan_rx_isr_ignore:
+    if (sniff_c == 1) {
+	printf("indc\n");
+	return -1;
+    }
     rxinfo->flags |= BLE_MBUF_HDR_F_IGNORED;
     ble_ll_state_set(BLE_LL_STATE_STANDBY);
     return -1;
@@ -1995,7 +2007,9 @@ ble_ll_scan_rx_pkt_in(uint8_t ptype, struct os_mbuf *om, struct ble_mbuf_hdr *hd
     struct ble_ll_scan_addr_data addrd;
     uint8_t max_pdu_type;
     scansm = &g_ble_ll_scan_sm;
-
+    if(sniff_c) {
+	printf("scan_rx\n");
+    }
     /* Ignore PDUs we do not expect here */
     max_pdu_type = BLE_ADV_PDU_TYPE_ADV_SCAN_IND;
 #if MYNEWT_VAL(BLE_LL_CFG_FEAT_LL_EXT_ADV)
@@ -2016,14 +2030,16 @@ ble_ll_scan_rx_pkt_in(uint8_t ptype, struct os_mbuf *om, struct ble_mbuf_hdr *hd
         return;
     }
 #endif
-#if 0
-    if (BLE_MBUF_HDR_CRC_OK(hdr)) {
+#if 1
         if (ptype == BLE_ADV_PDU_TYPE_CONNECT_IND) {
+printf("ind\n");
 #if MYNEWT_VAL(BLE_LL_ROLE_PERIPHERAL)
-	    ble_ll_scan_sm_stop(0);
+	    ble_ll_scan_sm_stop(1);
     	    uint8_t *rxbuf;
-    	    rxbuf = m->om_data;
-            if (rxbuf[0] & BLE_ADV_PDU_HDR_TXADD_MASK) {
+	    uint8_t addr_type;
+    	    rxbuf = om->om_data;
+	    printf("pdu type %d\n",rxbuf[0] & BLE_ADV_PDU_HDR_TYPE_MASK);
+        if (rxbuf[0] & BLE_ADV_PDU_HDR_TXADD_MASK) {
                 addr_type = BLE_ADDR_RANDOM;
             } else {
                 addr_type = BLE_ADDR_PUBLIC;
@@ -2031,13 +2047,12 @@ ble_ll_scan_rx_pkt_in(uint8_t ptype, struct os_mbuf *om, struct ble_mbuf_hdr *hd
  
 	    if (ble_ll_conn_periph_start(rxbuf, addr_type, hdr,
                                          /*!(advsm->props &
-                                           BLE_HCI_LE_SET_EXT_ADV_PROP_LEGACY))*/ 0) {
+                                           BLE_HCI_LE_SET_EXT_ADV_PROP_LEGACY))*/ 0)) {
 		/*scheduled for conn after that we schould do always rx only instead of tx*/
 	        return;
 	    }
 #endif
     	}
-    } 
 #endif
 
     switch (scansm->scanp->scan_type) {
@@ -2123,7 +2138,7 @@ ble_ll_scan_hci_set_params(const uint8_t *cmdbuf, uint8_t len)
     scanp->scan_type = cmd->scan_type;
     scanp->timing.interval = ble_ll_scan_time_hci_to_ticks(scan_itvl);
     scanp->timing.window = ble_ll_scan_time_hci_to_ticks(scan_window);
-    printf("scan_type %d scan_itvl %d scan_window %d \n",scanp->scan_type,scan_itvl,scan_window);
+    //printf("scan_type %d scan_itvl %d scan_window %d \n",scanp->scan_type,scan_itvl,scan_window);
 #if (BLE_LL_SCAN_PHY_NUMBER == 2)
     scanp = &g_ble_ll_scan_params.scan_phys[PHY_CODED];
     scanp->configured = 0;

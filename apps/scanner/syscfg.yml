@@ -21,10 +21,10 @@ syscfg.vals:
 #    LOG_IMPLEMENTATION: full
     STATS_IMPLEMENTATION: full
 
-    BLE_ROLE_BROADCASTER: 0
+    BLE_ROLE_BROADCASTER: 1
     BLE_ROLE_CENTRAL: 0
     BLE_ROLE_OBSERVER: 1
-    BLE_ROLE_PERIPHERAL: 0
+    BLE_ROLE_PERIPHERAL: 1
 
     # Whether to save data to sys/config, or just keep it in RAM.
     BLE_STORE_CONFIG_PERSIST: 0

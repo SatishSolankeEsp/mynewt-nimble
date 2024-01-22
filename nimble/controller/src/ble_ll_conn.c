@@ -1438,6 +1438,7 @@ conn_tx_pdu:
     /* Set transmit end callback */
     ble_phy_set_txend_cb(txend_func, connsm);
     rc = ble_phy_tx(ble_ll_tx_mbuf_pducb, m, end_transition);
+    printf("tx call\n");
     if (!rc) {
         /* Log transmit on connection state */
         cur_txlen = ble_hdr->txinfo.pyld_len;
@@ -1512,6 +1513,7 @@ ble_ll_conn_event_start_cb(struct ble_ll_sched_item *sch)
     ble_ll_whitelist_disable();
 
     /* Set LL state */
+    printf("conn sta\n");
     ble_ll_state_set(BLE_LL_STATE_CONNECTION);
 
     /* Set channel */
@@ -2889,7 +2891,7 @@ ble_ll_conn_created(struct ble_ll_conn_sm *connsm, struct ble_mbuf_hdr *rxhdr)
 #endif
 #if MYNEWT_VAL(BLE_LL_ROLE_PERIPHERAL)
         case BLE_LL_CONN_ROLE_PERIPHERAL:
-            ble_ll_adv_send_conn_comp_ev(connsm, rxhdr);
+            //ble_ll_adv_send_conn_comp_ev(connsm, rxhdr);
             break;
 #endif
         default:
@@ -3885,7 +3887,9 @@ chk_rx_terminate_ind:
         rx_pyld_len += BLE_LL_DATA_MIC_LEN;
     }
     if (reply && ble_ll_conn_can_send_next_pdu(connsm, begtime, add_usecs)) {
-        rc = ble_ll_conn_tx_pdu(connsm);
+    	/*instead of tx we suppose to do rx let see how it goes*/
+        printf("do tx\n");	
+	rc = ble_ll_conn_tx_pdu(connsm);
     }
 
 conn_exit:
@@ -4096,7 +4100,7 @@ ble_ll_conn_periph_start(uint8_t *rxbuf, uint8_t pat, struct ble_mbuf_hdr *rxhdr
             }
         }
     }
-
+    printf("conn p1\n");
     /* Allocate a connection. If none available, dont do anything */
     connsm = ble_ll_conn_sm_get();
     if (connsm == NULL) {
@@ -4105,6 +4109,14 @@ ble_ll_conn_periph_start(uint8_t *rxbuf, uint8_t pat, struct ble_mbuf_hdr *rxhdr
 
     /* Set the pointer at the start of the connection data */
     dptr = rxbuf + BLE_LL_CONN_REQ_ADVA_OFF + BLE_DEV_ADDR_LEN;
+    uint32_t len= rxbuf[1];
+    for(int i =1; i < len; i++) {
+    	printf("rxbuf %02x ", rxbuf[i]);
+    }
+    printf("\n");
+    for(int i=0; i < (len - 14); i++) {
+	printf("dptr %02x ", dptr[i]);
+    }
 
     /* Set connection state machine information */
     connsm->access_addr = get_le32(dptr);
@@ -4112,6 +4124,7 @@ ble_ll_conn_periph_start(uint8_t *rxbuf, uint8_t pat, struct ble_mbuf_hdr *rxhdr
     crcinit = (crcinit << 8) | dptr[5];
     crcinit = (crcinit << 8) | dptr[4];
     connsm->crcinit = crcinit;
+    printf("crc %ld\n",crcinit);
     connsm->tx_win_size = dptr[7];
     connsm->tx_win_off = get_le16(dptr + 8);
     connsm->conn_itvl = get_le16(dptr + 10);
@@ -4128,14 +4141,18 @@ ble_ll_conn_periph_start(uint8_t *rxbuf, uint8_t pat, struct ble_mbuf_hdr *rxhdr
         (connsm->tx_win_size < BLE_LL_CONN_TX_WIN_MIN) ||
         (connsm->periph_latency > BLE_LL_CONN_PERIPH_LATENCY_MAX) ||
         (connsm->hop_inc < 5) || (connsm->hop_inc > 16)) {
-        goto err_periph_start;
+        printf("err1\n");
+	printf("tx_win_off %d conn_itvl %d tx_win_size %d periph_latency %d hop_inc %d \n",connsm->tx_win_off,
+		connsm->conn_itvl, connsm->tx_win_size, connsm->periph_latency, connsm->hop_inc);
+	goto err_periph_start;
     }
 
     /* Slave latency cannot cause a supervision timeout */
     temp = (connsm->periph_latency + 1) * (connsm->conn_itvl * 2) *
            BLE_LL_CONN_ITVL_USECS;
     if ((connsm->supervision_tmo * 10000) <= temp ) {
-        goto err_periph_start;
+        printf("err2\n");
+goto err_periph_start;
     }
 
     /*
@@ -4147,7 +4164,8 @@ ble_ll_conn_periph_start(uint8_t *rxbuf, uint8_t pat, struct ble_mbuf_hdr *rxhdr
         temp = 8;
     }
     if (connsm->tx_win_size > temp) {
-        goto err_periph_start;
+        printf("err3\n");
+goto err_periph_start;
     }
 
     /* Set the address of device that we are connecting with */
@@ -4157,7 +4175,8 @@ ble_ll_conn_periph_start(uint8_t *rxbuf, uint8_t pat, struct ble_mbuf_hdr *rxhdr
     /* Calculate number of used channels; make sure it meets min requirement */
     connsm->chan_map_used = ble_ll_utils_chan_map_used_get(connsm->chan_map);
     if (connsm->chan_map_used < 2) {
-        goto err_periph_start;
+        printf("err4\n");
+goto err_periph_start;
     }
 
     ble_ll_conn_itvl_to_ticks(connsm->conn_itvl, &connsm->conn_itvl_ticks,
@@ -4182,11 +4201,13 @@ ble_ll_conn_periph_start(uint8_t *rxbuf, uint8_t pat, struct ble_mbuf_hdr *rxhdr
         SLIST_REMOVE(&g_ble_ll_conn_active_list, connsm, ble_ll_conn_sm, act_sle);
         STAILQ_INSERT_TAIL(&g_ble_ll_conn_free_list, connsm, free_stqe);
     }
+printf("conn p2\n");
     return rc;
 
 err_periph_start:
     STAILQ_INSERT_TAIL(&g_ble_ll_conn_free_list, connsm, free_stqe);
     STATS_INC(ble_ll_conn_stats, periph_rxd_bad_conn_req_params);
+	printf("conn p3\n");
     return 0;
 }
 #endif

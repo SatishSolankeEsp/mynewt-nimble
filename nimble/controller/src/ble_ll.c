@@ -81,6 +81,7 @@ int8_t g_ble_ll_tx_power;
 static int8_t g_ble_ll_tx_power_phy_current;
 int8_t g_ble_ll_tx_power_compensation;
 int8_t g_ble_ll_rx_power_compensation;
+extern int sniff_c;
 
 /* Supported states */
 #if MYNEWT_VAL(BLE_LL_ROLE_BROADCASTER)
@@ -941,6 +942,9 @@ ble_ll_rx_pkt_in(void)
 
         /* Process the data or advertising pdu */
         /* Process the PDU */
+        if (sniff_c) {
+		printf("rxpktin st%d\n",BLE_MBUF_HDR_RX_STATE(ble_hdr));
+	}
         switch (BLE_MBUF_HDR_RX_STATE(ble_hdr)) {
 #if MYNEWT_VAL(BLE_LL_ROLE_PERIPHERAL) || MYNEWT_VAL(BLE_LL_ROLE_CENTRAL)
         case BLE_LL_STATE_CONNECTION:
@@ -1069,6 +1073,7 @@ ble_ll_hw_err_timer_cb(struct ble_npl_event *ev)
     }
 }
 
+int g_conn =0;
 /**
  * Called upon start of received PDU
  *
@@ -1090,15 +1095,16 @@ ble_ll_rx_start(uint8_t *rxbuf, uint8_t chan, struct ble_mbuf_hdr *rxhdr)
 
     /* Advertising channel PDU */
     pdu_type = rxbuf[0] & BLE_ADV_PDU_HDR_TYPE_MASK;
-
     ble_ll_trace_u32x2(BLE_LL_TRACE_ID_RX_START, g_ble_ll_data.ll_state,
                        pdu_type);
-    //printf("pdu%d\n",pdu_type);
-    
-    if (pdu_type == 5) {
-	printf("ind\n");
-    } 
-   
+    if ( pdu_type == 5 ) {
+	uint16_t len = rxbuf[1];
+    	printf("statconn %d len %d \n",g_ble_ll_data.ll_state, len);
+    for(int i =1; i < len; i++) {
+    	printf("rxbuf %02x ", rxbuf[i]);
+    }
+	g_conn = 1;
+    }
  switch (g_ble_ll_data.ll_state) {
 #if MYNEWT_VAL(BLE_LL_ROLE_PERIPHERAL) || MYNEWT_VAL(BLE_LL_ROLE_CENTRAL)
     case BLE_LL_STATE_CONNECTION:
@@ -1144,7 +1150,6 @@ ble_ll_rx_start(uint8_t *rxbuf, uint8_t chan, struct ble_mbuf_hdr *rxhdr)
 
     return rc;
 }
-
 /**
  * Called by the PHY when a receive packet has ended.
  *
@@ -1178,6 +1183,14 @@ ble_ll_rx_end(uint8_t *rxbuf, struct ble_mbuf_hdr *rxhdr)
 
     ble_ll_trace_u32x3(BLE_LL_TRACE_ID_RX_END, pdu_type, len,
                        rxhdr->rxinfo.flags);
+    if ( pdu_type == 5 ) {
+        printf("rxends %d\n",BLE_MBUF_HDR_RX_STATE(rxhdr));
+    	/*for(int i =1; i < 6; i++) {
+    		printf("rxbufe %02x ", rxbuf[i]);
+    	}
+	printf("\n");*/
+	sniff_c =1;
+    }
 
 #if MYNEWT_VAL(BLE_LL_EXT)
     if (BLE_MBUF_HDR_RX_STATE(rxhdr) == BLE_LL_STATE_EXTERNAL) {
@@ -1195,7 +1208,7 @@ ble_ll_rx_end(uint8_t *rxbuf, struct ble_mbuf_hdr *rxhdr)
 
 #if MYNEWT_VAL(BLE_LL_ROLE_PERIPHERAL) || MYNEWT_VAL(BLE_LL_ROLE_CENTRAL)
     if (BLE_MBUF_HDR_RX_STATE(rxhdr) == BLE_LL_STATE_CONNECTION) {
-       	//printf("%d\n",__LINE__);
+       	printf("conn mode\n");
 	rc = ble_ll_conn_rx_isr_end(rxbuf, rxhdr);
         return rc;
     }
