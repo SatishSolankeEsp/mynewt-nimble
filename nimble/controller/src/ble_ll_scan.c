@@ -817,7 +817,7 @@ ble_ll_scan_start(struct ble_ll_scan_sm *scansm)
 static uint8_t
 ble_ll_scan_get_next_adv_prim_chan(uint8_t chan)
 {
-   ++chan;
+   //++chan;
     if (chan == BLE_PHY_NUM_CHANS) {
         chan = BLE_PHY_ADV_CHAN_START;
     }
@@ -2008,7 +2008,7 @@ ble_ll_scan_rx_pkt_in(uint8_t ptype, struct os_mbuf *om, struct ble_mbuf_hdr *hd
     uint8_t max_pdu_type;
     scansm = &g_ble_ll_scan_sm;
     if(sniff_c) {
-	printf("scan_rx\n");
+//	printf("scan_rx\n");
     }
     /* Ignore PDUs we do not expect here */
     max_pdu_type = BLE_ADV_PDU_TYPE_ADV_SCAN_IND;
@@ -2032,13 +2032,13 @@ ble_ll_scan_rx_pkt_in(uint8_t ptype, struct os_mbuf *om, struct ble_mbuf_hdr *hd
 #endif
 #if 1
         if (ptype == BLE_ADV_PDU_TYPE_CONNECT_IND) {
-printf("ind\n");
+//	    printf("ind\n");
 #if MYNEWT_VAL(BLE_LL_ROLE_PERIPHERAL)
 	    ble_ll_scan_sm_stop(1);
     	    uint8_t *rxbuf;
 	    uint8_t addr_type;
     	    rxbuf = om->om_data;
-	    printf("pdu type %d\n",rxbuf[0] & BLE_ADV_PDU_HDR_TYPE_MASK);
+//	    printf("pdu type %d\n",rxbuf[0] & BLE_ADV_PDU_HDR_TYPE_MASK);
         if (rxbuf[0] & BLE_ADV_PDU_HDR_TXADD_MASK) {
                 addr_type = BLE_ADDR_RANDOM;
             } else {

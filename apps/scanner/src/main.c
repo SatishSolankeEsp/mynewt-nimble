@@ -190,7 +190,7 @@ scan_event(struct ble_gap_event *event, void *arg)
     switch (event->type) {
     /* advertising report has been received during discovery procedure */
     case BLE_GAP_EVENT_DISC:
-        MODLOG_DFLT(ERROR, "Advertising report received!\n");
+        printf("Advertising report received!\n");
         rc = ble_hs_adv_parse_fields(&fields, event->disc.data,
                                      event->disc.length_data);
         if (rc != 0) {

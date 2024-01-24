@@ -943,7 +943,7 @@ ble_ll_rx_pkt_in(void)
         /* Process the data or advertising pdu */
         /* Process the PDU */
         if (sniff_c) {
-		printf("rxpktin st%d\n",BLE_MBUF_HDR_RX_STATE(ble_hdr));
+//		printf("rxpktin st%d\n",BLE_MBUF_HDR_RX_STATE(ble_hdr));
 	}
         switch (BLE_MBUF_HDR_RX_STATE(ble_hdr)) {
 #if MYNEWT_VAL(BLE_LL_ROLE_PERIPHERAL) || MYNEWT_VAL(BLE_LL_ROLE_CENTRAL)
@@ -1098,12 +1098,16 @@ ble_ll_rx_start(uint8_t *rxbuf, uint8_t chan, struct ble_mbuf_hdr *rxhdr)
     ble_ll_trace_u32x2(BLE_LL_TRACE_ID_RX_START, g_ble_ll_data.ll_state,
                        pdu_type);
     if ( pdu_type == 5 ) {
-	uint16_t len = rxbuf[1];
-    	printf("statconn %d len %d \n",g_ble_ll_data.ll_state, len);
-    for(int i =1; i < len; i++) {
-    	printf("rxbuf %02x ", rxbuf[i]);
-    }
+//	uint16_t len = rxbuf[1];
+    	printf("statconn %d\n",g_ble_ll_data.ll_state);
+	printf("len %d\n",rxbuf[1]);
+#if 0
+    	for(int i =1; i < len; i++) {
+    		printf("rxbuf %02x ", rxbuf[i]);
+    	}
+#endif
 	g_conn = 1;
+
     }
  switch (g_ble_ll_data.ll_state) {
 #if MYNEWT_VAL(BLE_LL_ROLE_PERIPHERAL) || MYNEWT_VAL(BLE_LL_ROLE_CENTRAL)
@@ -1184,7 +1188,7 @@ ble_ll_rx_end(uint8_t *rxbuf, struct ble_mbuf_hdr *rxhdr)
     ble_ll_trace_u32x3(BLE_LL_TRACE_ID_RX_END, pdu_type, len,
                        rxhdr->rxinfo.flags);
     if ( pdu_type == 5 ) {
-        printf("rxends %d\n",BLE_MBUF_HDR_RX_STATE(rxhdr));
+//        printf("rxends %d\n",BLE_MBUF_HDR_RX_STATE(rxhdr));
     	/*for(int i =1; i < 6; i++) {
     		printf("rxbufe %02x ", rxbuf[i]);
     	}
