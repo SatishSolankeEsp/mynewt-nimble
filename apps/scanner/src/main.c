@@ -215,15 +215,15 @@ scan(void)
 {
     /* set scan parameters */
     struct ble_gap_disc_params scan_params;
-    scan_params.itvl = 500;
-    scan_params.window = 250;
+    scan_params.itvl = 160;
+    scan_params.window = 160;
     scan_params.filter_policy = 0;
     scan_params.limited = 0;
     scan_params.passive = 1;
     scan_params.filter_duplicates = 1;
     /* performs discovery procedure; value of own_addr_type is hard-coded,
        because NRPA is used */
-    ble_gap_disc(BLE_OWN_ADDR_RANDOM, 1000, &scan_params, scan_event, NULL);
+    ble_gap_disc(BLE_OWN_ADDR_RANDOM, BLE_HS_FOREVER, &scan_params, scan_event, NULL);
 }
 
 static void

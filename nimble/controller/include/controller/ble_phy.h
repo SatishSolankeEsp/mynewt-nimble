@@ -20,6 +20,7 @@
 #ifndef H_BLE_PHY_
 #define H_BLE_PHY_
 
+#include "nimble/nimble_npl.h"
 #include "nimble/hci_common.h"
 
 #ifdef __cplusplus
@@ -28,6 +29,26 @@ extern "C" {
 
 /* Forward declarations */
 struct os_mbuf;
+
+struct ll_packet_info
+{
+    uint8_t flag;
+    uint8_t phy_chan;
+    int8_t rssi;
+    uint32_t phy_access_address;
+    uint32_t crc;
+    struct ble_npl_event sniff_tx;
+    uint8_t adv_addrs[6];
+};
+
+
+struct sniff_info_arg {
+	uint8_t len;
+	uint8_t mode;
+	uint8_t *data;
+};
+
+extern struct ll_packet_info g_ll_packet_info;
 
 /* Channel/Frequency defintions */
 #define BLE_PHY_NUM_CHANS           (40)
@@ -180,7 +201,7 @@ void ble_phy_resolv_list_enable(void);
 
 /* Disable phy resolving list */
 void ble_phy_resolv_list_disable(void);
-
+void ble_phy_sniff_mode_info(struct ble_npl_event *ev); 
 /*
  * PHY mode values for 1M, 2M and Coded S=8 are the same as corresponding values
  * of PHY. This makes conversion between 'phy' and 'phy_mode' easier and it also

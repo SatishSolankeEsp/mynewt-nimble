@@ -793,7 +793,8 @@ ble_ll_scan_start(struct ble_ll_scan_sm *scansm)
     }
 
     rc = ble_phy_rx_set_start_time(ble_ll_tmr_get() +
-                                   g_ble_ll_sched_offset_ticks, 0);
+                                   0, 0);
+   // printf("time %ld tick %d rc %d\n",ble_ll_tmr_get() ,g_ble_ll_sched_offset_ticks,rc);
     if (!rc || rc == BLE_PHY_ERR_RX_LATE) {
         /* If we are late here, it is still OK because we keep scanning.
          * Clear error
@@ -816,11 +817,10 @@ ble_ll_scan_start(struct ble_ll_scan_sm *scansm)
 static uint8_t
 ble_ll_scan_get_next_adv_prim_chan(uint8_t chan)
 {
-    ++chan;
+   // ++chan;
     if (chan == BLE_PHY_NUM_CHANS) {
         chan = BLE_PHY_ADV_CHAN_START;
     }
-
     return chan;
 }
 
@@ -1690,12 +1690,14 @@ ble_ll_scan_chk_resume(void)
     os_sr_t sr;
     struct ble_ll_scan_sm *scansm;
     uint32_t now;
-
+    //printf("scan check\n");
     scansm = &g_ble_ll_scan_sm;
     if (scansm->scan_enabled) {
+//	printf("en\n");
         OS_ENTER_CRITICAL(sr);
         if (scansm->restart_timer_needed) {
             scansm->restart_timer_needed = 0;
+//	    printf("rs\n");
             ble_ll_event_add(&scansm->scan_sched_ev);
             STATS_INC(ble_ll_stats, scan_timer_restarted);
             OS_EXIT_CRITICAL(sr);
@@ -1706,6 +1708,7 @@ ble_ll_scan_chk_resume(void)
         if (ble_ll_state_get() == BLE_LL_STATE_STANDBY &&
             ble_ll_scan_is_inside_window(scansm->scanp, now)) {
             /* Turn on the receiver and set state */
+	    //printf("rt\n");
             ble_ll_scan_start(scansm);
         }
         OS_EXIT_CRITICAL(sr);

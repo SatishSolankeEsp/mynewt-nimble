@@ -1601,6 +1601,12 @@ struct ble_hci_ev_auth_pyld_tmo {
 #define BLE_HCI_EVCODE_VS                   (0xff)
 struct ble_hci_ev_vs {
     uint8_t id;
+    uint8_t flag;
+    uint8_t phy_chan;
+    int8_t rssi;
+    uint32_t phy_access_address;
+    uint32_t crc;
+    uint8_t adv_addrs[6];
     uint8_t data[0];
 } __attribute__((packed));
 

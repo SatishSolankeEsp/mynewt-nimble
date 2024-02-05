@@ -29,7 +29,7 @@
 #include "controller/ble_ll_hci.h"
 #include "controller/ble_ll_ctrl.h"
 #include "ble_ll_conn_priv.h"
-
+#include "controller/ble_phy.h"
 #if (BLETEST_CONCURRENT_CONN_TEST == 1)
 extern void bletest_ltk_req_reply(uint16_t handle);
 #endif
@@ -613,11 +613,10 @@ ble_ll_hci_ev_send_vs_assert(const char *file, uint32_t line)
 }
 
 void
-ble_ll_hci_ev_send_vs_printf(uint8_t id, const char *fmt, ...)
+ble_ll_hci_ev_send_vs_printf(uint8_t *data, uint32_t len, uint8_t mode)
 {
     struct ble_hci_ev_vs *ev;
     struct ble_hci_ev *hci_ev;
-    va_list ap;
 
     hci_ev = ble_transport_alloc_evt(1);
     if (!hci_ev) {
@@ -625,16 +624,34 @@ ble_ll_hci_ev_send_vs_printf(uint8_t id, const char *fmt, ...)
     }
 
     hci_ev->opcode = BLE_HCI_EVCODE_VS;
-    hci_ev->length = sizeof(*ev);
+    hci_ev->length = sizeof(*ev) + len;
 
     ev = (void *) hci_ev->data;
-    ev->id = id;
-
-    va_start(ap, fmt);
-    hci_ev->length += vsnprintf((void *)ev->data,
-                                BLE_HCI_MAX_DATA_LEN - sizeof(*ev), fmt, ap);
-    va_end(ap);
-
+//    if (mode == 1) {
+	    ev->id = 0x00;
+	    ev->flag = g_ll_packet_info.flag;
+            ev->phy_chan = g_ll_packet_info.phy_chan;
+	    ev->rssi = g_ll_packet_info.rssi;
+	    ev->phy_access_address = g_ll_packet_info.phy_access_address;
+            memcpy(ev->adv_addrs, g_ll_packet_info.adv_addrs, 6);
+	    ev->crc = g_ll_packet_info.crc;
+	    memcpy(ev->data, data, len);
+	    for (int i =0; i<= len; i++) {
+		printf(" rxbuff %02x ", ev->data[i]);
+            }
+	    
+#if 0 
+   } else if (mode == 2) {
+	    ev->id = 0x01;
+            ev->flag = g_ll_packet_info.flag;
+            ev->phy_chan = g_ll_packet_info.phy_chan;
+            ev->rssi = g_ll_packet_info.rssi;
+            ev->phy_access_address = g_ll_packet_info.phy_access_address;
+            memcpy(ev->addrs, g_ll_packet_info.adv_addrs, 6);
+            ev->crc = g_ll_packet_info.crc;
+            memcpy(ev->data, data, line);
+    }
+#endif
     ble_ll_hci_event_send(hci_ev);
 }
 

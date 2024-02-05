@@ -31,7 +31,7 @@
 #include "nimble/transport.h"
 #include "controller/ble_ll_utils.h"
 #include "controller/ble_hw.h"
-#include "controller/ble_phy.h"
+//#include "controller/ble_phy.h"
 #include "controller/ble_phy_trace.h"
 #include "controller/ble_ll.h"
 #include "controller/ble_ll_pdu.h"
@@ -1169,6 +1169,9 @@ ble_ll_rx_end(uint8_t *rxbuf, struct ble_mbuf_hdr *rxhdr)
     /* Get advertising PDU type and length */
     pdu_type = rxbuf[0] & BLE_ADV_PDU_HDR_TYPE_MASK;
     len = rxbuf[1];
+    if( pdu_type == 5) {
+	printf("in\n");
+    }
 
     ble_ll_trace_u32x3(BLE_LL_TRACE_ID_RX_END, pdu_type, len,
                        rxhdr->rxinfo.flags);
@@ -1262,6 +1265,9 @@ ble_ll_rx_end(uint8_t *rxbuf, struct ble_mbuf_hdr *rxhdr)
             }
         }
         rc = ble_ll_scan_rx_isr_end(rxpdu, crcok);
+	//printf("rscan\n");
+//	ble_ll_scan_chk_resume();
+//	return rc;
         break;
 #if MYNEWT_VAL(BLE_LL_CFG_FEAT_LL_EXT_ADV)
     case BLE_LL_STATE_SCAN_AUX:

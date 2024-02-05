@@ -18,7 +18,7 @@
 
 syscfg.vals:
     CONSOLE_IMPLEMENTATION: full
-    LOG_IMPLEMENTATION: full
+#    LOG_IMPLEMENTATION: full
     STATS_IMPLEMENTATION: full
 
     BLE_ROLE_BROADCASTER: 0
@@ -28,3 +28,4 @@ syscfg.vals:
 
     # Whether to save data to sys/config, or just keep it in RAM.
     BLE_STORE_CONFIG_PERSIST: 0
+    BLE_PHY_DBG_TIME_WFR_PIN: ((0x01ul<<5) | 8)

@@ -95,6 +95,7 @@ extern void tm_tick(void);
  */
 
 /* XXX: private header file? */
+struct ll_packet_info g_ll_packet_info;
 extern uint8_t g_nrf_num_irks;
 extern uint32_t g_nrf_irk_list[];
 
@@ -623,7 +624,6 @@ ble_phy_set_start_time(uint32_t cputime, uint8_t rem_us, bool tx)
 #endif
     int rem_us_corr;
     int min_rem_us;
-
     /* Calculate rem_us for radio and FEM enable. The result may be a negative
      * value, but we'll adjust later.
      */
@@ -694,7 +694,6 @@ ble_phy_set_start_time(uint32_t cputime, uint8_t rem_us, bool tx)
     if ((delta & 0x800000) || (delta < 3)) {
         return -1;
     }
-
     /* Clear and set TIMER0 to fire off at proper time */
     nrf_timer_task_trigger(NRF_TIMER0, NRF_TIMER_TASK_CLEAR);
     nrf_timer_cc_set(NRF_TIMER0, 0, radio_rem_us + rem_us_corr);
@@ -782,7 +781,7 @@ ble_phy_set_start_now(void)
      */
     now = os_cputime_get32();
     NRF_RTC0->EVENTS_COMPARE[0] = 0;
-    nrf_rtc_cc_set(NRF_RTC0, 0, (now + 3) & 0xffffff);
+    nrf_rtc_cc_set(NRF_RTC0, 0, (now + 2) & 0xffffff);
     nrf_rtc_event_enable(NRF_RTC0, RTC_EVTENSET_COMPARE0_Msk);
 
 #if PHY_USE_FEM_LNA
@@ -1320,6 +1319,17 @@ ble_phy_rx_end_isr(void)
     }
 }
 
+void ble_phy_sniff_mode_info(struct ble_npl_event *ev) {
+	struct sniff_info_arg *sniff_rx = (struct sniff_info_arg *) ble_npl_event_get_arg(ev);
+	struct ble_mbuf_hdr *rxhdr = &g_ble_phy_data.rxhdr;
+//	g_ll_packet_info.phy_chan = g_ble_phy_data.phy_chan;
+//	g_ll_packet_info.phy_access_address = 
+//		g_ble_phy_data.phy_access_address;
+	g_ll_packet_info.rssi = rxhdr->rxinfo.rssi;
+        ble_ll_hci_ev_send_vs_printf(sniff_rx->data, sniff_rx->len, sniff_rx->mode);
+}
+
+
 static bool
 ble_phy_rx_start_isr(void)
 {
@@ -1428,6 +1438,25 @@ ble_phy_rx_start_isr(void)
             BLE_DEV_ADDR_LEN) * 8 + g_ble_phy_data.phy_bcc_offset);
     }
 #endif
+    uint8_t pdu_type = dptr[3] & BLE_ADV_PDU_HDR_TYPE_MASK;
+    	//printf("pdu type %d\n",pdu_type);
+    if ( pdu_type == 5) {
+        struct sniff_info_arg *sniff_rx;
+        uint16_t payload_len;
+	payload_len = dptr[4];
+	sniff_rx = (struct sniff_info_arg*)malloc(payload_len + 2);
+	if (!sniff_rx) {
+	    return 0;
+	}
+        printf("pdu len %d\n",payload_len);
+	memset(sniff_rx, 0 , payload_len);
+	sniff_rx->len = payload_len;
+	sniff_rx->mode = 2;
+	sniff_rx->data = dptr + 3;
+	ble_npl_event_init(&g_ll_packet_info.sniff_tx, ble_phy_sniff_mode_info, NULL);
+	ble_npl_event_set_arg(&g_ll_packet_info.sniff_tx, (void *) sniff_rx);
+	ble_npl_eventq_put(&g_ble_ll_data.ll_evq, &g_ll_packet_info.sniff_tx);
+    }
 
     /* Call Link Layer receive start function */
     rc = ble_ll_rx_start(dptr + 3,
@@ -1476,6 +1505,7 @@ ble_phy_isr(void)
          * regular radio disabled event below. In other case radio was disabled
          * on purpose and there's nothing more to handle so we can clear mask.
          */
+//	printf("startrx\n");
         if (ble_phy_rx_start_isr()) {
             irq_en &= ~RADIO_INTENCLR_DISABLED_Msk;
         }
@@ -1492,7 +1522,7 @@ ble_phy_isr(void)
         NRF_RADIO->EVENTS_END = 0;
         NRF_RADIO->EVENTS_DISABLED = 0;
         nrf_radio_int_disable(NRF_RADIO, RADIO_INTENCLR_DISABLED_Msk);
-
+//	printf("endisr\n");
         switch (g_ble_phy_data.phy_state) {
         case BLE_PHY_STATE_RX:
 #if MYNEWT_VAL(BLE_FEM_LNA)
@@ -1518,7 +1548,7 @@ ble_phy_isr(void)
     }
 
     g_ble_phy_data.phy_transition_late = 0;
-
+    //printf("endphyisr\n");
     /* Count # of interrupts */
     STATS_INC(ble_phy_stats, phy_isrs);
 
@@ -1860,14 +1890,13 @@ ble_phy_rx_set_start_time(uint32_t cputime, uint8_t rem_usecs)
     /* Clear timer0 compare to TXEN since we are transmitting */
     phy_ppi_timer0_compare0_to_radio_txen_disable();
 
-    if (ble_phy_set_start_time(cputime, rem_usecs, false) != 0) {
-        STATS_INC(ble_phy_stats, rx_late);
+    //if (ble_phy_set_start_time(cputime, rem_usecs, false) != 0) {
+    //    STATS_INC(ble_phy_stats, rx_late);
 
         /* We're late so let's just try to start RX as soon as possible */
         ble_phy_set_start_now();
-
         late = true;
-    }
+    //}
 
     /* Enable PPI to automatically start RXEN */
     phy_ppi_timer0_compare0_to_radio_rxen_enable();
@@ -1984,7 +2013,23 @@ ble_phy_tx(ble_phy_tx_pducb_t pducb, void *pducb_arg, uint8_t end_trans)
 
     /* Set transmitted payload length */
     g_ble_phy_data.phy_tx_pyld_len = payload_len;
-
+#if 0    
+    if (SDKCONFIG_BLE_SNIFFER_MODE) {
+      struct sniff_info_arg *sniff_rx;
+      payload_len = dptr[1];
+      sniff_rx = (struct sniff_info_arg*)malloc(payload_len + 2);
+      if (!sniff_rx) {
+          return 0;
+      }
+      memset(sniff_rx, 0 , payload_len);
+      sniff_rx->len = payload_len;
+      sniff_rx->mode = 2;
+      sniff_rx->data = dptr;
+      ble_npl_event_init(&g_ll_packet_info.sniff_tx, ble_phy_sniff_mode_info, NULL);
+      ble_npl_event_set_arg(&g_ll_packet_info.sniff_tx, (void *) sniff_rx);
+      ble_npl_eventq_put(&g_ble_ll_data.ll_evq, &g_ll_packet_info.sniff_tx);
+   }
+#endif
     /* If we already started transmitting, abort it! */
     state = NRF_RADIO->STATE;
     if (state != RADIO_STATE_STATE_Tx) {
