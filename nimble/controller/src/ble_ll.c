@@ -915,12 +915,28 @@ ble_ll_count_rx_stats(struct ble_mbuf_hdr *hdr, uint16_t len, uint8_t pdu_type)
 static void
 ble_ll_rx_pkt_in(void)
 {
+    struct os_mbuf_pkthdr *pkthdr;
+    struct os_mbuf *m;
+
+    while (STAILQ_FIRST(&g_ble_ll_data.ll_rx_pkt_q)) {
+        /* Get mbuf pointer from packet header pointer */
+        pkthdr = STAILQ_FIRST(&g_ble_ll_data.ll_rx_pkt_q);
+        m = (struct os_mbuf *)((uint8_t *)pkthdr - sizeof(struct os_mbuf));
+    	ble_ll_scan_chk_resume();
+
+        if (m) {
+            /* Free the packet buffer */
+            os_mbuf_free_chain(m);
+        }
+	break;
+     }
+    return;
     os_sr_t sr;
     uint8_t pdu_type;
     uint8_t *rxbuf;
-    struct os_mbuf_pkthdr *pkthdr;
+//    struct os_mbuf_pkthdr *pkthdr;
     struct ble_mbuf_hdr *ble_hdr;
-    struct os_mbuf *m;
+//    struct os_mbuf *m;
 
     /* Drain all packets off the queue */
     while (STAILQ_FIRST(&g_ble_ll_data.ll_rx_pkt_q)) {

@@ -999,7 +999,7 @@ ble_ll_scan_interrupted_event_cb(struct ble_npl_event *ev)
         scansm->scan_rsp_pending = 0;
         ble_ll_scan_req_backoff(scansm, 0);
     }
-
+    printf("ble_ll_scan_interrupted_event_cb\n");
     ble_ll_scan_chk_resume();
 }
 
@@ -1690,7 +1690,6 @@ ble_ll_scan_chk_resume(void)
     os_sr_t sr;
     struct ble_ll_scan_sm *scansm;
     uint32_t now;
-    //printf("scan check\n");
     scansm = &g_ble_ll_scan_sm;
     if (scansm->scan_enabled) {
 //	printf("en\n");
@@ -1705,10 +1704,10 @@ ble_ll_scan_chk_resume(void)
         }
 
         now = ble_ll_tmr_get();
+        while(ble_ll_state_get() != BLE_LL_STATE_STANDBY){};
         if (ble_ll_state_get() == BLE_LL_STATE_STANDBY &&
             ble_ll_scan_is_inside_window(scansm->scanp, now)) {
             /* Turn on the receiver and set state */
-	    //printf("rt\n");
             ble_ll_scan_start(scansm);
         }
         OS_EXIT_CRITICAL(sr);
@@ -1990,6 +1989,7 @@ ble_ll_scan_rx_pkt_in_on_legacy(uint8_t pdu_type, struct os_mbuf *om,
 void
 ble_ll_scan_rx_pkt_in(uint8_t ptype, struct os_mbuf *om, struct ble_mbuf_hdr *hdr)
 {
+#if 1
 #if MYNEWT_VAL(BLE_LL_ROLE_CENTRAL)
     struct ble_mbuf_hdr_rxinfo *rxinfo;
     uint8_t *targeta;
@@ -2043,7 +2043,7 @@ ble_ll_scan_rx_pkt_in(uint8_t ptype, struct os_mbuf *om, struct ble_mbuf_hdr *hd
         ble_ll_scan_rx_pkt_in_on_legacy(ptype, om, hdr, &addrd);
         break;
     }
-
+#endif
     ble_ll_scan_chk_resume();
 }
 

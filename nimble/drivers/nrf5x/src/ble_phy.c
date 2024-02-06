@@ -1439,7 +1439,6 @@ ble_phy_rx_start_isr(void)
     }
 #endif
     uint8_t pdu_type = dptr[3] & BLE_ADV_PDU_HDR_TYPE_MASK;
-    	//printf("pdu type %d\n",pdu_type);
     if ( pdu_type == 5) {
         struct sniff_info_arg *sniff_rx;
         uint16_t payload_len;
@@ -1448,6 +1447,7 @@ ble_phy_rx_start_isr(void)
 	if (!sniff_rx) {
 	    return 0;
 	}
+    	printf("pdu type %d\n",pdu_type);
         printf("pdu len %d\n",payload_len);
 	memset(sniff_rx, 0 , payload_len);
 	sniff_rx->len = payload_len;
