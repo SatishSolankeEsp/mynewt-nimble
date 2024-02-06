@@ -915,6 +915,7 @@ ble_ll_count_rx_stats(struct ble_mbuf_hdr *hdr, uint16_t len, uint8_t pdu_type)
 static void
 ble_ll_rx_pkt_in(void)
 {
+#if 0
     struct os_mbuf_pkthdr *pkthdr;
     struct os_mbuf *m;
 
@@ -931,12 +932,13 @@ ble_ll_rx_pkt_in(void)
 	break;
      }
     return;
+#endif
     os_sr_t sr;
     uint8_t pdu_type;
     uint8_t *rxbuf;
-//    struct os_mbuf_pkthdr *pkthdr;
+    struct os_mbuf_pkthdr *pkthdr;
     struct ble_mbuf_hdr *ble_hdr;
-//    struct os_mbuf *m;
+    struct os_mbuf *m;
 
     /* Drain all packets off the queue */
     while (STAILQ_FIRST(&g_ble_ll_data.ll_rx_pkt_q)) {

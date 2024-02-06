@@ -1989,7 +1989,6 @@ ble_ll_scan_rx_pkt_in_on_legacy(uint8_t pdu_type, struct os_mbuf *om,
 void
 ble_ll_scan_rx_pkt_in(uint8_t ptype, struct os_mbuf *om, struct ble_mbuf_hdr *hdr)
 {
-#if 1
 #if MYNEWT_VAL(BLE_LL_ROLE_CENTRAL)
     struct ble_mbuf_hdr_rxinfo *rxinfo;
     uint8_t *targeta;
@@ -2043,7 +2042,6 @@ ble_ll_scan_rx_pkt_in(uint8_t ptype, struct os_mbuf *om, struct ble_mbuf_hdr *hd
         ble_ll_scan_rx_pkt_in_on_legacy(ptype, om, hdr, &addrd);
         break;
     }
-#endif
     ble_ll_scan_chk_resume();
 }
 
